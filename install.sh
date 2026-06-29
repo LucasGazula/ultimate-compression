@@ -40,7 +40,7 @@ if [ ! -d "$INSTALL_DIR" ]; then
 fi
 
 # Download codebase if files aren't present or if updating via remote curl installer
-if [ ! -f "uc" ] || [ ! -f "$INSTALL_DIR/uc" ]; then
+if [ ! -f "uc" ] || [ ! -f "install.sh" ] || [ ! -f "$INSTALL_DIR/uc" ]; then
   echo "Downloading codebase from GitHub (LucasGazula/ultimate-compression)..."
   curl -fsSL "https://github.com/LucasGazula/ultimate-compression/tarball/main" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
 fi
