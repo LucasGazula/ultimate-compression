@@ -130,12 +130,6 @@ async function loadSettings() {
         const data = await res.json();
         currentSettings = data;
         
-        // Map operation mode (radio)
-        const radios = document.getElementsByName('dynamicMode');
-        radios.forEach(r => {
-            r.checked = r.value === data.dynamicMode;
-        });
-        
         // Map toggles
         document.getElementById('check-rtk').checked = !!data.rtkEnabled;
         document.getElementById('check-headroom').checked = !!data.headroomEnabled;
@@ -182,15 +176,7 @@ function updateStatusTabBadges(settings) {
 // 4. Save settings to Backend
 const saveBtn = document.getElementById('btn-save-settings');
 saveBtn.addEventListener('click', async () => {
-    // Get active radio mode
-    let dynamicMode = 'dynamic';
-    const radios = document.getElementsByName('dynamicMode');
-    radios.forEach(r => {
-        if (r.checked) dynamicMode = r.value;
-    });
-    
     const updates = {
-        dynamicMode: dynamicMode,
         rtkEnabled: document.getElementById('check-rtk').checked,
         headroomEnabled: document.getElementById('check-headroom').checked,
         headroomUrl: document.getElementById('input-headroom-url').value,
