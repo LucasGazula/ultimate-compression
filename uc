@@ -157,6 +157,50 @@ def handle_rtk_filter(action):
         
     sys.stdout.flush()
 
+def init_project():
+    """Initializes the active directory with project-scoped rules for Antigravity/Claude Code."""
+    database.init_db()
+    settings = database.get_settings()
+    
+    agents_dir = os.path.join(os.getcwd(), ".agents")
+    if not os.path.exists(agents_dir):
+        os.makedirs(agents_dir, exist_ok=True)
+        print("Created .agents/ directory.")
+        
+    agents_file = os.path.join(agents_dir, "AGENTS.md")
+    
+    # Write custom rules
+    rules = []
+    rules.append("# Ultimate Compression: Agent Rules\n")
+    rules.append("This file contains rules for local agent optimization. Modifying settings in the dashboard will update these rules.\n")
+    
+    from src import prompts
+    
+    # Add Caveman rules
+    if settings.get("cavemanEnabled") and settings.get("cavemanLevel") in prompts.CAVEMAN_PROMPTS:
+        level = settings["cavemanLevel"]
+        rules.append("## 🪨 Caveman Style (Constraint)")
+        rules.append(prompts.CAVEMAN_PROMPTS[level])
+        rules.append("")
+        
+    # Add Ponytail rules
+    if settings.get("ponytailEnabled") and settings.get("ponytailLevel") in prompts.PONYTAIL_PROMPTS:
+        level = settings["ponytailLevel"]
+        rules.append("## 💈 Ponytail (Constraint)")
+        rules.append(prompts.PONYTAIL_PROMPTS[level])
+        rules.append("")
+        
+    # Add Headroom / MCP configuration instructions
+    mcp_path = os.path.join(get_real_path(), "src", "mcp_server.py")
+    rules.append("## ⚡ Model Context Protocol (MCP) Integration")
+    rules.append(f"To enable direct Headroom and RTK tools in your agent, add this command to your MCP server list:")
+    rules.append(f"Command: `python3 {mcp_path}`\n")
+    
+    with open(agents_file, "w") as f:
+        f.write("\n".join(rules))
+        
+    print(f"Successfully configured workspace rules in: {agents_file}")
+
 def main():
     parser = argparse.ArgumentParser(description="Ultimate Compression (uc) CLI tool.")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -164,6 +208,7 @@ def main():
     subparsers.add_parser("start", help="Starts the uc local server & docker dependencies")
     subparsers.add_parser("stop", help="Stops the uc local server & docker dependencies")
     subparsers.add_parser("env", help="Prints session setup environment variables")
+    subparsers.add_parser("init", help="Bootstraps the current directory with agent optimization rules")
     
     filter_parser = subparsers.add_parser("rtk-filter", help="Filters stdin content and returns compressed text")
     filter_parser.add_argument("action", help="The command action identifier (e.g. git-diff, grep)")
@@ -176,6 +221,8 @@ def main():
         stop_server()
     elif args.command == "env":
         print_env()
+    elif args.command == "init":
+        init_project()
     elif args.command == "rtk-filter":
         handle_rtk_filter(args.action)
     else:
