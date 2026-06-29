@@ -30,6 +30,20 @@ LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uc.log")
 def get_real_path():
     return os.path.dirname(os.path.abspath(__file__))
 
+def is_process_running(pid):
+    if os.name == 'nt':
+        try:
+            res = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True)
+            return str(pid) in res.stdout
+        except Exception:
+            return False
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except (ProcessLookupError, ValueError, OSError):
+            return False
+
 def start_server():
     """Starts the FastAPI backend and Docker Headroom container."""
     database.init_db()
@@ -39,10 +53,12 @@ def start_server():
         try:
             with open(PID_FILE, "r") as f:
                 pid = int(f.read().strip())
-            os.kill(pid, 0)
-            print("Ultimate Compression backend already running.")
-            return
-        except (ProcessLookupError, ValueError, OSError):
+            if is_process_running(pid):
+                print("Ultimate Compression backend already running.")
+                return
+            else:
+                os.remove(PID_FILE)
+        except (ValueError, OSError):
             os.remove(PID_FILE)
             
     print("Starting Ultimate Compression server on port 20129...")
@@ -86,8 +102,11 @@ def stop_server():
                 pid = int(f.read().strip())
             print(f"Stopping backend (PID: {pid})...")
             
-            # Send SIGTERM
-            os.kill(pid, signal.SIGTERM)
+            # Send stop command cross-platform
+            if os.name == 'nt':
+                subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
+            else:
+                os.kill(pid, signal.SIGTERM)
             
             # Verify and clean up
             os.remove(PID_FILE)
@@ -479,15 +498,23 @@ def run_interactive_tui(stdscr):
             return False
 
 def run_interactive_config():
-    import curses
+    try:
+        import curses
+    except ImportError:
+        print("Warning: The 'curses' module is not available. TUI configuration is disabled.")
+        print("To enable TUI on Windows, run: pip install windows-curses")
+        print("Falling back to text-based configuration dashboard:")
+        return False
     try:
         saved = curses.wrapper(run_interactive_tui)
         if saved:
             print("Settings updated successfully.")
         else:
             print("Configuration closed without changes.")
+        return True
     except Exception as e:
         print(f"Error running interactive config: {e}")
+        return False
 
 def handle_config(sets=None, interactive=False):
     database.init_db()
@@ -559,9 +586,9 @@ def handle_status():
         try:
             with open(PID_FILE, "r") as f:
                 pid = int(f.read().strip())
-            os.kill(pid, 0)
-            running = True
-        except (ProcessLookupError, ValueError, OSError):
+            if is_process_running(pid):
+                running = True
+        except (ValueError, OSError):
             pass
             
     print("=========================================")

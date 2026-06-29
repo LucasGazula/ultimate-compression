@@ -234,12 +234,13 @@ def crawl_session_transcripts():
     ponytail_level = settings.get("ponytailLevel", "full")
     
     # 1. Gather all transcript files
-    # Antigravity CLI logs: /home/pi/.gemini/antigravity-cli/brain/*/logs/transcript.jsonl
-    search_pattern = "/home/pi/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl"
+    home = os.path.expanduser("~")
+    # Antigravity CLI logs: ~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl
+    search_pattern = os.path.join(home, ".gemini", "antigravity-cli", "brain", "*", ".system_generated", "logs", "transcript.jsonl")
     transcript_files = glob.glob(search_pattern)
     
     # Support Claude Code logs if they exist in standard paths
-    claude_search = "/home/pi/.claude/projects/**/*.jsonl"
+    claude_search = os.path.join(home, ".claude", "projects", "**", "*.jsonl")
     transcript_files.extend(glob.glob(claude_search, recursive=True))
     
     for file_path in transcript_files:

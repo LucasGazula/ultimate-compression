@@ -29,12 +29,12 @@ def get_settings():
 
 # API: Update Settings
 @app.post("/api/settings")
-def update_settings(settings: dict):
+def update_settings(settings: dict, background_tasks: fastapi.BackgroundTasks):
     updated = database.update_settings(settings)
     
     # Optional orchestrator trigger: If headroom is enabled, ensure docker container is running
     if updated.get("headroomEnabled"):
-        check_headroom_docker()
+        background_tasks.add_task(check_headroom_docker)
         
     return updated
 
@@ -84,20 +84,21 @@ def check_headroom_docker():
         upstream_gemini = os.getenv("UC_UPSTREAM_GEMINI") or os.getenv("GEMINI_BASE_URL")
         
         # Prevent circular routing back to ultimate-compression (port 20129)
+        router_path = os.path.expanduser("~/9router-docker")
         if upstream_anthropic and "20129" not in upstream_anthropic:
             env_args.extend(["-e", f"ANTHROPIC_TARGET_API_URL={upstream_anthropic}"])
-        elif os.path.exists("/home/pi/9router-docker") or "192.168.0.52" in str(os.environ):
+        elif os.path.exists(router_path) or "192.168.0.52" in str(os.environ):
             # Fallback to local 9router port if active
             env_args.extend(["-e", "ANTHROPIC_TARGET_API_URL=http://192.168.0.52:20128/v1"])
             
         if upstream_openai and "20129" not in upstream_openai:
             env_args.extend(["-e", f"OPENAI_TARGET_API_URL={upstream_openai}"])
-        elif os.path.exists("/home/pi/9router-docker") or "192.168.0.52" in str(os.environ):
+        elif os.path.exists(router_path) or "192.168.0.52" in str(os.environ):
             env_args.extend(["-e", "OPENAI_TARGET_API_URL=http://192.168.0.52:20128/v1"])
 
         if upstream_gemini and "20129" not in upstream_gemini:
             env_args.extend(["-e", f"GEMINI_TARGET_API_URL={upstream_gemini}"])
-        elif os.path.exists("/home/pi/9router-docker") or "192.168.0.52" in str(os.environ):
+        elif os.path.exists(router_path) or "192.168.0.52" in str(os.environ):
             env_args.extend(["-e", "GEMINI_TARGET_API_URL=http://192.168.0.52:20128/v1"])
             
         print(f"[Docker] Launching new Headroom container on port 8787. Upstreams: {env_args}")
