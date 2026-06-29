@@ -11,8 +11,9 @@ By leveraging shell wrappers (shims) for local commands and a stateless API prox
 - **Command-Line Shims (RTK)**: Intercepts verbose CLI commands like `git diff`, `git status`, `grep`, and `ls` at the shell level, compressing their outputs locally before sending them to your AI agent.
 - **Stateless API Proxy**: For tools where you can configure the API Base URL, the local proxy intercepts requests, applies context compression, and injects optimization prompts.
 - **MCP Server**: Seamlessly integrates with modern agents (like Antigravity CLI and Claude Code) as a Model Context Protocol server, enabling safe, ban-proof context compression.
-- **Telemetry Dashboard (SQLite)**: A local web UI served on `http://localhost:20128` that displays real-time statistics, token savings, cost reduction, and tool activity logs.
+- **Telemetry Dashboard (SQLite)**: A local web UI served on `http://localhost:20129/dashboard/` that displays real-time statistics, token savings, cost reduction, and tool activity logs.
 - **Dynamic Mode**: Automatically routes requests via MCP for subscription-based agents and via Proxy for API key-based tools.
+- **Interactive Configuration TUI**: View stats and edit tool parameters directly from your terminal session using keyboard arrow keys.
 
 ---
 
@@ -22,15 +23,63 @@ Run the appropriate one-liner installer command in your terminal:
 
 ### Linux / WSL / macOS
 ```bash
-curl -fsSL https://raw.githubusercontent.com/[username]/ultimate-compression/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/LucasGazula/ultimate-compression/main/install.sh | bash
 ```
 
 ### Windows (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/[username]/ultimate-compression/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/LucasGazula/ultimate-compression/main/install.ps1 | iex
 ```
 
 *The installer will auto-detect `/mnt/ssd` on your machine and install all files directly on your SSD, adding the `uc` CLI command to your PATH.*
+
+---
+
+## Usage
+
+Use the `uc` CLI command to manage and configure Ultimate Compression:
+
+### Start Backend Services
+Start the local FastAPI server and Docker containers:
+```bash
+uc start
+```
+
+### Stop Backend Services
+Stop local servers and containers:
+```bash
+uc stop
+```
+
+### System Status & Stats
+View server status, lifetime token savings, tool breakdown, and recent activity logs directly in the terminal:
+```bash
+uc status
+```
+
+### Interactive Settings Configuration
+Open the terminal-based interactive Configuration TUI. Use **Up/Down** arrow keys to navigate, **Left/Right** to toggle boolean settings or cycle options, and **Enter** to edit numeric/string fields:
+```bash
+uc config
+```
+
+### Set Settings directly
+Configure parameters programmatically:
+```bash
+uc config --set <KEY>=<VALUE>
+```
+
+### Setup Workspace Rules
+Bootstrap the current directory with agent optimization rules (adds `.agents/AGENTS.md`):
+```bash
+uc init
+```
+
+### Print Shell Environment Setup
+Output proxy environment setup variables to load into your active shell:
+```bash
+uc env
+```
 
 ---
 
