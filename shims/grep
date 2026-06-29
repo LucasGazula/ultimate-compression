@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
-REAL_GREP=$(PATH=$(echo "$PATH" | sed -E 's|/mnt/ssd/ultimate-compression/shims:?||g') which grep)
-"$REAL_GREP" "$@" | python3 /mnt/ssd/ultimate-compression/uc rtk-filter "grep"
+SHIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UC_DIR="$(dirname "$SHIM_DIR")"
+REAL_GREP=$(PATH=$(echo "$PATH" | sed -E "s|$SHIM_DIR:?||g") which grep)
+"$REAL_GREP" "$@" | python3 "$UC_DIR/uc" rtk-filter "grep"

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-REAL_GIT=$(PATH=$(echo "$PATH" | sed -E 's|/mnt/ssd/ultimate-compression/shims:?||g') which git)
+SHIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UC_DIR="$(dirname "$SHIM_DIR")"
+REAL_GIT=$(PATH=$(echo "$PATH" | sed -E "s|$SHIM_DIR:?||g") which git)
 
 if [[ "$1" == "diff" || "$1" == "status" ]]; then
-  "$REAL_GIT" "$@" | python3 /mnt/ssd/ultimate-compression/uc rtk-filter "git-$1"
+  "$REAL_GIT" "$@" | python3 "$UC_DIR/uc" rtk-filter "git-$1"
 else
   exec "$REAL_GIT" "$@"
 fi
