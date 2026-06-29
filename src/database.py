@@ -50,6 +50,14 @@ def init_db():
         )
     """)
     
+    # Create crawled_transcripts tracking table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS crawled_transcripts (
+            session_id TEXT PRIMARY KEY,
+            last_parsed_line INTEGER NOT NULL
+        )
+    """)
+    
     # Insert default settings if not exists
     for key, val in DEFAULT_SETTINGS.items():
         cursor.execute("SELECT 1 FROM settings WHERE key = ?", (key,))
@@ -116,6 +124,12 @@ def update_settings(updates):
 
 def get_stats():
     """Compiles compression and token statistics from the SQLite database."""
+    # Crawl local transcripts first to ensure statistics are up to date
+    try:
+        crawl_session_transcripts()
+    except Exception as e:
+        print(f"[Crawler] Error crawling transcripts: {e}")
+        
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -194,5 +208,119 @@ def clear_logs():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM compression_logs")
+    cursor.execute("DELETE FROM crawled_transcripts")
     conn.commit()
     conn.close()
+
+def crawl_session_transcripts():
+    """
+    Crawls local Antigravity CLI and Claude Code conversation transcripts to find
+    assistant responses and log Caveman & Ponytail savings.
+    """
+    import glob
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    settings = get_settings()
+    caveman_enabled = settings.get("cavemanEnabled", False)
+    ponytail_enabled = settings.get("ponytailEnabled", False)
+    caveman_level = settings.get("cavemanLevel", "full")
+    ponytail_level = settings.get("ponytailLevel", "full")
+    
+    # 1. Gather all transcript files
+    # Antigravity CLI logs: /home/pi/.gemini/antigravity-cli/brain/*/logs/transcript.jsonl
+    search_pattern = "/home/pi/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl"
+    transcript_files = glob.glob(search_pattern)
+    
+    # Support Claude Code logs if they exist in standard paths
+    claude_search = "/home/pi/.claude/projects/**/*.jsonl"
+    transcript_files.extend(glob.glob(claude_search, recursive=True))
+    
+    for file_path in transcript_files:
+        # Determine a clean session identifier from path
+        session_id = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(file_path))))
+        if not session_id or session_id == "logs" or len(session_id) < 10:
+            session_id = os.path.basename(file_path)
+            
+        # Get last parsed line number
+        cursor.execute("SELECT last_parsed_line FROM crawled_transcripts WHERE session_id = ?", (session_id,))
+        row = cursor.fetchone()
+        last_parsed = row["last_parsed_line"] if row else 0
+        
+        if not os.path.exists(file_path):
+            continue
+            
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+        except Exception:
+            continue
+            
+        if len(lines) <= last_parsed:
+            continue
+            
+        new_lines = lines[last_parsed:]
+        output_tokens = 0
+        
+        for line in new_lines:
+            if not line.strip():
+                continue
+            try:
+                data = json.loads(line)
+                # Antigravity shape
+                if data.get("source") == "MODEL" and data.get("type") in ("PLANNER_RESPONSE", "assistant"):
+                    content = data.get("content", "")
+                    if content and isinstance(content, str):
+                        # Estimate output tokens: ~4 chars per token for prose/fragments
+                        output_tokens += len(content) // 4
+                # Claude Code shape
+                elif data.get("type") == "assistant" and data.get("message") and isinstance(data["message"], dict):
+                    usage = data["message"].get("usage")
+                    if usage:
+                        output_tokens += usage.get("output_tokens", 0)
+            except Exception:
+                continue
+                
+        # If we found output tokens, calculate savings and log them!
+        if output_tokens > 0:
+            # Caveman
+            if caveman_enabled:
+                ratio_map = {"lite": 0.25, "full": 0.65, "ultra": 0.75}
+                ratio = ratio_map.get(caveman_level, 0.65)
+                saved = int(output_tokens * (ratio / (1.0 - ratio)))
+                original = output_tokens + saved
+                log_timestamp = datetime.utcnow().isoformat() + "Z"
+                cost_per_token = settings.get("tokenCostPerMillionOutput", 15.0) / 1000000.0
+                cost = saved * cost_per_token
+                
+                cursor.execute("""
+                    INSERT INTO compression_logs 
+                    (timestamp, tool, action, original_tokens, compressed_tokens, tokens_saved, cost_saved_usd)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (log_timestamp, "caveman", f"transcript-{session_id}-{caveman_level}", original, output_tokens, saved, cost))
+                
+            # Ponytail
+            if ponytail_enabled:
+                ratio_map = {"lite": 0.15, "full": 0.30, "ultra": 0.45}
+                ratio = ratio_map.get(ponytail_level, 0.30)
+                saved = int(output_tokens * (ratio / (1.0 - ratio)))
+                original = output_tokens + saved
+                log_timestamp = datetime.utcnow().isoformat() + "Z"
+                cost_per_token = settings.get("tokenCostPerMillionOutput", 15.0) / 1000000.0
+                cost = saved * cost_per_token
+                
+                cursor.execute("""
+                    INSERT INTO compression_logs 
+                    (timestamp, tool, action, original_tokens, compressed_tokens, tokens_saved, cost_saved_usd)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (log_timestamp, "ponytail", f"transcript-{session_id}-{ponytail_level}", original, output_tokens, saved, cost))
+
+        # Update last parsed line
+        cursor.execute("""
+            INSERT OR REPLACE INTO crawled_transcripts (session_id, last_parsed_line)
+            VALUES (?, ?)
+        """, (session_id, len(lines)))
+        
+    conn.commit()
+    conn.close()
+
