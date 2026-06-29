@@ -3,6 +3,10 @@
 
 set -e
 
+# Temporarily clean PATH from any active ultimate-compression shims during installation to prevent loops
+export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "ultimate-compression/shims" | tr '\n' ':' | sed 's|:$||')
+
+
 # 1. Determine Installation Directory
 if [ -d "/mnt/ssd" ]; then
   INSTALL_DIR="/mnt/ssd/ultimate-compression"
@@ -52,9 +56,26 @@ fi
 # 5. Make CLI Executable
 chmod +x "$INSTALL_DIR/uc"
 
-# 6. Add to PATH (bashrc / zshrc)
+# 6. Clean Old Paths and Add New PATH (bashrc / zshrc)
 echo "Configuring shell path..."
 UC_PATH_LINE="export PATH=\"$INSTALL_DIR:\$PATH\""
+
+clean_profile() {
+  local profile="$1"
+  if [ -f "$profile" ]; then
+    if sed --version >/dev/null 2>&1; then
+      # GNU sed (Linux)
+      sed -i '/\/mnt\/ssd\/ultimate-compression/d' "$profile"
+    else
+      # BSD sed (macOS)
+      sed -i '' '/\/mnt\/ssd\/ultimate-compression/d' "$profile"
+    fi
+  fi
+}
+
+clean_profile "$HOME/.bashrc"
+clean_profile "$HOME/.zshrc"
+clean_profile "$HOME/.profile"
 
 add_to_profile() {
   local profile="$1"
