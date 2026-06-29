@@ -10,7 +10,7 @@ for d in $PATH; do
   if [ -d "$d" ]; then
     abs_d=$(cd "$d" && pwd)
     case "$abs_d" in
-      */ultimate-compression/shims) ;;
+      *ultimate-compression/shims) ;;
       *) CLEAN_PATH="${CLEAN_PATH:+$CLEAN_PATH:}$d" ;;
     esac
   fi
@@ -39,8 +39,8 @@ if [ ! -d "$INSTALL_DIR" ]; then
   mkdir -p "$INSTALL_DIR"
 fi
 
-# Download codebase if files aren't present (e.g., remote curl installation)
-if [ ! -f "$INSTALL_DIR/uc" ]; then
+# Download codebase if files aren't present or if updating via remote curl installer
+if [ ! -f "uc" ] || [ ! -f "$INSTALL_DIR/uc" ]; then
   echo "Downloading codebase from GitHub (LucasGazula/ultimate-compression)..."
   curl -fsSL "https://github.com/LucasGazula/ultimate-compression/tarball/main" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
 fi
