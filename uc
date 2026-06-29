@@ -115,13 +115,17 @@ def print_env():
         # PowerShell output
         print(f'$env:PATH = "{shims_path};" + $env:PATH')
         print('$env:OPENAI_API_BASE = "http://localhost:20129/v1"')
+        print('$env:OPENAI_BASE_URL = "http://localhost:20129/v1"')
         print('$env:ANTHROPIC_API_BASE = "http://localhost:20129/v1"')
+        print('$env:ANTHROPIC_BASE_URL = "http://localhost:20129/v1"')
         print('# Execute: uc env | iex')
     else:
         # Bash / Zsh output
         print(f'export PATH="{shims_path}:$PATH"')
         print('export OPENAI_API_BASE="http://localhost:20129/v1"')
+        print('export OPENAI_BASE_URL="http://localhost:20129/v1"')
         print('export ANTHROPIC_API_BASE="http://localhost:20129/v1"')
+        print('export ANTHROPIC_BASE_URL="http://localhost:20129/v1"')
         print('# Execute: eval $(uc env)')
 
 def handle_rtk_filter(action):
