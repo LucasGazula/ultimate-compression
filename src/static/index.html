@@ -287,39 +287,40 @@
                     
                     <div class="tutorial-accordion">
                         <div class="tutorial-item">
-                            <h4>🤖 1. No Antigravity CLI / Claude Code</h4>
+                            <h4>💻 1. Instalar em Nova Máquina / Servidor (Sem clonar Git)</h4>
                             <div class="tutorial-content">
-                                <p><strong>Modo Seguro (Nativo via MCP):</strong></p>
-                                <p>Abra o arquivo de configuração de MCP global (`~/.gemini/config/mcp.json` ou `~/.clauderc.json`) e insira a seguinte configuração:</p>
-                                <pre>{
-  "mcpServers": {
-    "ultimate-compression": {
-      "command": "python3",
-      "args": ["/mnt/ssd/ultimate-compression/src/mcp_server.py"]
-    }
-  }
-}</pre>
+                                <p>Para instalar o Ultimate Compression globalmente na sua máquina, execute o comando correspondente no terminal:</p>
+                                <p><strong>No Linux / macOS (Bash):</strong></p>
+                                <pre>curl -fsSL https://raw.githubusercontent.com/LucasGazula/ultimate-compression/main/install.sh | bash</pre>
+                                <p><strong>No Windows (PowerShell):</strong></p>
+                                <pre>irm https://raw.githubusercontent.com/LucasGazula/ultimate-compression/main/install.ps1 | iex</pre>
+                                <p><em>Nota: Após a instalação, basta executar <code>uc start</code> para subir o servidor e depois <code>uc init</code> dentro dos seus repositórios para ativar a compressão automaticamente!</em></p>
                             </div>
                         </div>
 
                         <div class="tutorial-item">
-                            <h4>💻 2. No VS Code / Claude (Extensão)</h4>
+                            <h4>🚀 2. Inicializar um Repositório (Uso diário)</h4>
                             <div class="tutorial-content">
-                                <p><strong>Modo Proxy:</strong></p>
-                                <p>Se o seu assistente de IA usa chaves de API próprias, você pode configurar a variável de ambiente de API base local na sua sessão do terminal antes de abrir a IDE:</p>
-                                <pre>export OPENAI_API_BASE="http://localhost:20129/v1"
-export ANTHROPIC_API_BASE="http://localhost:20129/v1"
-code .</pre>
+                                <p>Não é mais necessário editar arquivos manualmente ou configurar o <code>eval</code> a cada sessão. Apenas execute o comando a seguir no terminal do seu projeto:</p>
+                                <pre>python3 uc init</pre>
+                                <p><strong>O que o comando faz automaticamente por você:</strong></p>
+                                <ul>
+                                    <li>Configura as regras de comportamento do agente no projeto em <code>.agents/AGENTS.md</code>.</li>
+                                    <li>Registra o servidor MCP do Ultimate Compression globalmente no Antigravity CLI e Claude Code.</li>
+                                    <li>Injeta a configuração das variáveis de ambiente de proxy nos perfis de shell (<code>.bashrc</code>/<code>.zshrc</code>/<code>.profile</code> no Linux/macOS ou perfis do PowerShell no Windows).</li>
+                                </ul>
                             </div>
                         </div>
 
                         <div class="tutorial-item">
-                            <h4>⚡ 3. Ativando o RTK (Shims Globais)</h4>
+                            <h4>🔄 3. Carregando no Terminal Atual</h4>
                             <div class="tutorial-content">
-                                <p>Para que ferramentas CLI interceptem automaticamente comandos verbose de Git e terminal, inicialize o ambiente na sua sessão atual:</p>
+                                <p>Para que o proxy do terminal atual reconheça a instalação do proxy imediatamente, recarregue seu terminal ou execute o comando de ativação manual uma única vez:</p>
+                                <p><strong>No Linux / macOS:</strong></p>
                                 <pre>eval $(uc env)</pre>
-                                <p>Ou adicione definitivamente no seu profile (`~/.bashrc` ou `~/.zshrc`):</p>
-                                <pre>export PATH="/mnt/ssd/ultimate-compression/shims:$PATH"</pre>
+                                <p><strong>No Windows (PowerShell):</strong></p>
+                                <pre>uc env | iex</pre>
+                                <p><em>Dica: Todos os novos terminais abertos a partir de agora já iniciarão com o proxy ativo por padrão!</em></p>
                             </div>
                         </div>
                     </div>

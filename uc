@@ -3,7 +3,11 @@ import sys
 import os
 
 # Self-relaunch in virtualenv if available
-venv_python = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv", "bin", "python")
+venv_dir = os.path.dirname(os.path.abspath(__file__))
+venv_python = os.path.join(venv_dir, ".venv", "bin", "python")
+if not os.path.exists(venv_python):
+    venv_python = os.path.join(venv_dir, ".venv", "Scripts", "python.exe")
+
 if os.path.exists(venv_python) and sys.executable != venv_python:
     os.execv(venv_python, [venv_python] + sys.argv)
 
@@ -120,6 +124,7 @@ def print_env():
         print('$env:ANTHROPIC_BASE_URL = "http://localhost:20129/v1"')
         print('$env:GEMINI_API_BASE = "http://localhost:20129/v1"')
         print('$env:GOOGLE_API_BASE = "http://localhost:20129/v1"')
+        print('$env:ANTIGRAVITY_BASE_URL = "http://localhost:20129/v1"')
         print('$env:API_BASE = "http://localhost:20129/v1"')
         print('# Execute: uc env | iex')
     else:
@@ -131,6 +136,7 @@ def print_env():
         print('export ANTHROPIC_BASE_URL="http://localhost:20129/v1"')
         print('export GEMINI_API_BASE="http://localhost:20129/v1"')
         print('export GOOGLE_API_BASE="http://localhost:20129/v1"')
+        print('export ANTIGRAVITY_BASE_URL="http://localhost:20129/v1"')
         print('export API_BASE="http://localhost:20129/v1"')
         print('# Execute: eval $(uc env)')
 
@@ -206,6 +212,117 @@ def init_project():
         f.write("\n".join(rules))
         
     print(f"Successfully configured workspace rules in: {agents_file}")
+
+    # Auto-configure shell profiles (Bash/Zsh on Linux/Mac, PowerShell on Windows/Linux)
+    home = os.path.expanduser("~")
+    shims_path = os.path.join(get_real_path(), "shims")
+    
+    # Register MCP server globally in all common agent configuration folders
+    mcp_config = {
+        "command": "python3",
+        "args": [os.path.join(get_real_path(), "src", "mcp_server.py")]
+    }
+    
+    mcp_targets = [
+        os.path.join(home, ".gemini", "antigravity-cli", "mcp_config.json"),
+        os.path.join(home, ".gemini", "config", "mcp_config.json"),
+        os.path.join(home, ".clauderc.json"),
+        os.path.join(home, ".claude", "settings.json")
+    ]
+    
+    for path in mcp_targets:
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            data = {}
+            if os.path.exists(path) and os.path.getsize(path) > 0:
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except Exception:
+                    data = {}
+            if not isinstance(data, dict):
+                data = {}
+            if "mcpServers" not in data or not isinstance(data["mcpServers"], dict):
+                data["mcpServers"] = {}
+            data["mcpServers"]["ultimate-compression"] = mcp_config
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            print(f"Registered MCP server in: {path}")
+        except Exception as e:
+            print(f"Could not register MCP server in {path}: {e}")
+
+    # 1. Linux/Unix Shells (.bashrc, .zshrc, .profile)
+    env_block_sh = f"""
+# >>> ultimate-compression env >>>
+export PATH="{shims_path}:$PATH"
+export OPENAI_API_BASE="http://localhost:20129/v1"
+export OPENAI_BASE_URL="http://localhost:20129/v1"
+export ANTHROPIC_API_BASE="http://localhost:20129/v1"
+export ANTHROPIC_BASE_URL="http://localhost:20129/v1"
+export GEMINI_API_BASE="http://localhost:20129/v1"
+export GOOGLE_API_BASE="http://localhost:20129/v1"
+export ANTIGRAVITY_BASE_URL="http://localhost:20129/v1"
+export API_BASE="http://localhost:20129/v1"
+# <<< ultimate-compression env <<<
+"""
+    
+    sh_files = [os.path.join(home, ".bashrc"), os.path.join(home, ".zshrc"), os.path.join(home, ".profile")]
+    updated_sh = False
+    for path in sh_files:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if "ultimate-compression env" not in content:
+                    with open(path, "a", encoding="utf-8") as f:
+                        f.write(env_block_sh)
+                    print(f"Added proxy setup to shell profile: {path}")
+                    updated_sh = True
+            except Exception as e:
+                print(f"Could not update shell profile {path}: {e}")
+
+    # 2. Windows/PowerShell Shells (Microsoft.PowerShell_profile.ps1)
+    env_block_ps = f"""
+# >>> ultimate-compression env >>>
+$env:PATH = "{shims_path};" + $env:PATH
+$env:OPENAI_API_BASE = "http://localhost:20129/v1"
+$env:OPENAI_BASE_URL = "http://localhost:20129/v1"
+$env:ANTHROPIC_API_BASE = "http://localhost:20129/v1"
+$env:ANTHROPIC_BASE_URL = "http://localhost:20129/v1"
+$env:GEMINI_API_BASE = "http://localhost:20129/v1"
+$env:GOOGLE_API_BASE = "http://localhost:20129/v1"
+$env:ANTIGRAVITY_BASE_URL = "http://localhost:20129/v1"
+$env:API_BASE = "http://localhost:20129/v1"
+# <<< ultimate-compression env <<<
+"""
+    
+    ps_profiles = [
+        os.path.join(home, "Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"),
+        os.path.join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1"),
+        os.path.join(home, "My Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"),
+        os.path.join(home, "My Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1"),
+    ]
+    
+    updated_ps = False
+    for path in ps_profiles:
+        parent = os.path.dirname(path)
+        if os.path.exists(parent) or (os.name == 'nt' and "PowerShell" in path):
+            try:
+                os.makedirs(parent, exist_ok=True)
+                content = ""
+                if os.path.exists(path):
+                    with open(path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                if "ultimate-compression env" not in content:
+                    with open(path, "a", encoding="utf-8") as f:
+                        f.write(env_block_ps)
+                    print(f"Added proxy setup to PowerShell profile: {path}")
+                    updated_ps = True
+            except Exception as e:
+                print(f"Could not update PowerShell profile {path}: {e}")
+                
+    if updated_sh or updated_ps:
+        print("\n👉 Environment variables configured globally! For your CURRENT terminal window, please reload your shell ('exec bash', 'exec zsh' or restart PowerShell). Future terminals will have it pre-loaded automatically.")
 
 def main():
     parser = argparse.ArgumentParser(description="Ultimate Compression (uc) CLI tool.")

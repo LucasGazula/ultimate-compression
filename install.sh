@@ -21,8 +21,12 @@ fi
 # 3. Create directory if not exists (e.g. if running curl installer)
 if [ ! -d "$INSTALL_DIR" ]; then
   mkdir -p "$INSTALL_DIR"
-  # In case files aren't present (e.g., remote download), we cloned/copied them
-  # But since this is a local setup on the SSD, files are already in place!
+fi
+
+# Download codebase if files aren't present (e.g., remote curl installation)
+if [ ! -f "$INSTALL_DIR/uc" ]; then
+  echo "Downloading codebase from GitHub (LucasGazula/ultimate-compression)..."
+  curl -fsSL "https://github.com/LucasGazula/ultimate-compression/tarball/main" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
 fi
 
 # 4. Setup Virtual Environment using uv

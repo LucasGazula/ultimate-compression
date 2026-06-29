@@ -1,9 +1,13 @@
 import sys
+import os
+
+# Add package root to sys.path to enable absolute imports when run directly as a script
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import json
 import traceback
-import os
-from .rtk import compress_text
-from . import database
+from src.rtk import compress_text
+from src import database
 
 # Disable print to stdout for standard logging to prevent breaking JSON-RPC stdio protocol
 def log_err(msg):
@@ -127,6 +131,37 @@ def handle_tools_list(req_id):
         }
     })
 
+def compress_via_headroom(text):
+    """Compresses text via Headroom's v1/compress API if headroom is enabled."""
+    settings = database.get_settings()
+    if not settings.get("headroomEnabled") or not settings.get("headroomUrl"):
+        return None, 0
+        
+    import requests
+    url = settings["headroomUrl"].rstrip("/")
+    payload = {
+        "messages": [
+            {"role": "tool", "content": text}
+        ],
+        "model": "gemini-1.5-flash"
+    }
+    
+    try:
+        res = requests.post(f"{url}/v1/compress", json=payload, timeout=5.0)
+        if res.status_code == 200:
+            data = res.json()
+            messages = data.get("messages", [])
+            if messages and len(messages) > 0:
+                compressed = messages[0].get("content", text)
+                tokens_before = data.get("tokens_before", len(text) // 3)
+                tokens_after = data.get("tokens_after", len(compressed) // 3)
+                saved = data.get("tokens_saved", tokens_before - tokens_after)
+                if saved > 0:
+                    return compressed, saved
+    except Exception as e:
+        log_err(f"Failed to call headroom in MCP: {e}")
+    return None, 0
+
 def handle_tools_call(req_id, params):
     name = params.get("name")
     arguments = params.get("arguments", {})
@@ -138,6 +173,16 @@ def handle_tools_call(req_id, params):
             return
             
         try:
+            # Try Headroom compression first
+            compressed, saved = compress_via_headroom(text)
+            if saved > 0:
+                orig_tokens = len(text) // 3
+                comp_tokens = len(compressed) // 3
+                database.log_compression("headroom", "mcp-tool-headroom", orig_tokens, comp_tokens)
+                send_tool_result(req_id, compressed)
+                return
+                
+            # Fallback to RTK
             compressed, filter_name, saved = compress_text(text)
             if saved > 0:
                 orig_tokens = len(text) // 3
@@ -163,6 +208,16 @@ def handle_tools_call(req_id, params):
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
                 
+            # Try Headroom compression first
+            compressed, saved = compress_via_headroom(content)
+            if saved > 0:
+                orig_tokens = len(content) // 3
+                comp_tokens = len(compressed) // 3
+                database.log_compression("headroom", "mcp-file-headroom", orig_tokens, comp_tokens)
+                send_tool_result(req_id, compressed)
+                return
+                
+            # Fallback to RTK
             compressed, filter_name, saved = compress_text(content)
             if saved > 0:
                 orig_tokens = len(content) // 3

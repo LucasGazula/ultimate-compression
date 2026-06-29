@@ -174,6 +174,10 @@ async def handle_proxy(path: str, request: fastapi.Request):
         except Exception:
             pass
 
+    # Normalize path: ensure it has the appropriate version prefix (v1/ or v1beta/)
+    if not path.startswith("v1/") and not path.startswith("v1beta/"):
+        path = f"v1/{path}"
+
     # 2. Determine target host and service
     upstream_url = None
     is_claude = "api.anthropic.com" in path or "x-api-key" in headers or "v1/messages" in path

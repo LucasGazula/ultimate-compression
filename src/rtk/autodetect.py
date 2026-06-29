@@ -90,7 +90,8 @@ def auto_detect_filter(text):
     if SEARCH_LIST_HEADER_RE.search(head):
         return "search-list", filters.search_list
 
-    if len(lines) >= filters.SMART_TRUNCATE_MIN_LINES and is_line_numbered(lines):
+    full_lines = text.split("\n")
+    if len(full_lines) >= filters.SMART_TRUNCATE_MIN_LINES and is_line_numbered(full_lines):
         return "read-numbered", filters.read_numbered
 
     if len(non_empty) >= 5:
@@ -99,7 +100,7 @@ def auto_detect_filter(text):
         if len(unique_lines) < len(non_empty):
             return "dedup-log", filters.dedup_log
 
-    if len(lines) >= filters.SMART_TRUNCATE_MIN_LINES:
+    if len(full_lines) >= filters.SMART_TRUNCATE_MIN_LINES:
         return "smart-truncate", filters.smart_truncate
 
     return None, None
