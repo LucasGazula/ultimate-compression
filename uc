@@ -322,7 +322,17 @@ $env:API_BASE = "http://localhost:20129/v1"
                 print(f"Could not update PowerShell profile {path}: {e}")
                 
     if updated_sh or updated_ps:
-        print("\n👉 Environment variables configured globally! For your CURRENT terminal window, please reload your shell ('exec bash', 'exec zsh' or restart PowerShell). Future terminals will have it pre-loaded automatically.")
+        print("\n👉 Environment variables configured globally!")
+        if sys.stdout.isatty() and sys.stdin.isatty():
+            shell = os.environ.get("SHELL")
+            if shell and os.path.exists(shell):
+                print(f"🔄 Automatically reloading your shell ({os.path.basename(shell)}) to apply changes...")
+                os.execvp(shell, [shell])
+            elif os.name == 'nt':
+                print(f"🔄 Automatically reloading PowerShell to apply changes...")
+                os.system("powershell")
+        else:
+            print("Please reload your shell ('exec bash' or restart terminal) to apply proxy environment changes.")
 
 def main():
     parser = argparse.ArgumentParser(description="Ultimate Compression (uc) CLI tool.")
