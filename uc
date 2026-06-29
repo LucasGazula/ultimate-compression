@@ -227,7 +227,7 @@ def init_project():
     rules.append(f"To enable direct Headroom and RTK tools in your agent, add this command to your MCP server list:")
     rules.append(f"Command: `python3 {mcp_path}`\n")
     
-    with open(agents_file, "w") as f:
+    with open(agents_file, "w", encoding="utf-8") as f:
         f.write("\n".join(rules))
         
     print(f"Successfully configured workspace rules in: {agents_file}")
