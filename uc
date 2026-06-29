@@ -118,6 +118,9 @@ def print_env():
         print('$env:OPENAI_BASE_URL = "http://localhost:20129/v1"')
         print('$env:ANTHROPIC_API_BASE = "http://localhost:20129/v1"')
         print('$env:ANTHROPIC_BASE_URL = "http://localhost:20129/v1"')
+        print('$env:GEMINI_API_BASE = "http://localhost:20129/v1"')
+        print('$env:GOOGLE_API_BASE = "http://localhost:20129/v1"')
+        print('$env:API_BASE = "http://localhost:20129/v1"')
         print('# Execute: uc env | iex')
     else:
         # Bash / Zsh output
@@ -126,6 +129,9 @@ def print_env():
         print('export OPENAI_BASE_URL="http://localhost:20129/v1"')
         print('export ANTHROPIC_API_BASE="http://localhost:20129/v1"')
         print('export ANTHROPIC_BASE_URL="http://localhost:20129/v1"')
+        print('export GEMINI_API_BASE="http://localhost:20129/v1"')
+        print('export GOOGLE_API_BASE="http://localhost:20129/v1"')
+        print('export API_BASE="http://localhost:20129/v1"')
         print('# Execute: eval $(uc env)')
 
 def handle_rtk_filter(action):
