@@ -79,13 +79,26 @@ def check_headroom_docker():
                 print("[Docker] Starting existing Headroom container...")
                 subprocess.run(["docker", "start", "headroom"])
         else:
-            print("[Docker] Launching new Headroom container on port 8787...")
-            subprocess.run([
+            # Detect upstream endpoints in environment to chain Headroom with API gateways like 9router
+            env_args = []
+            upstream_anthropic = os.getenv("UC_UPSTREAM_ANTHROPIC") or os.getenv("ANTHROPIC_BASE_URL")
+            upstream_openai = os.getenv("UC_UPSTREAM_OPENAI") or os.getenv("OPENAI_BASE_URL")
+            
+            # Prevent circular routing back to ultimate-compression (port 20129)
+            if upstream_anthropic and "20129" not in upstream_anthropic:
+                env_args.extend(["-e", f"ANTHROPIC_BASE_URL={upstream_anthropic}"])
+            if upstream_openai and "20129" not in upstream_openai:
+                env_args.extend(["-e", f"OPENAI_BASE_URL={upstream_openai}"])
+                
+            print(f"[Docker] Launching new Headroom container on port 8787. Upstreams: {env_args}")
+            
+            run_cmd = [
                 "docker", "run", "-d", 
                 "--name", "headroom", 
-                "-p", "8787:8787", 
-                "ghcr.io/chopratejas/headroom:latest"
-            ])
+                "-p", "8787:8787"
+            ] + env_args + ["ghcr.io/chopratejas/headroom:latest"]
+            
+            subprocess.run(run_cmd)
         return True
     except Exception as e:
         print(f"[Docker] Error checking Headroom container: {e}")
