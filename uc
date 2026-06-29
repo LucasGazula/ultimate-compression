@@ -334,6 +334,66 @@ $env:API_BASE = "http://localhost:20129/v1"
         else:
             print("Please reload your shell ('exec bash' or restart terminal) to apply proxy environment changes.")
 
+def handle_config(sets=None):
+    database.init_db()
+    if sets:
+        from src.database import DEFAULT_SETTINGS
+        updates = {}
+        for s in sets:
+            if "=" not in s:
+                print(f"Error: Invalid set format '{s}'. Use KEY=VALUE.")
+                sys.exit(1)
+            key, val_str = s.split("=", 1)
+            key = key.strip()
+            val_str = val_str.strip()
+            if key not in DEFAULT_SETTINGS:
+                print(f"Error: Unknown setting '{key}'.")
+                print("Available settings: " + ", ".join(DEFAULT_SETTINGS.keys()))
+                sys.exit(1)
+            default_val = DEFAULT_SETTINGS[key]
+            try:
+                if isinstance(default_val, bool):
+                    val = val_str.lower() in ("true", "1", "yes", "on", "t")
+                elif isinstance(default_val, int):
+                    val = int(val_str)
+                elif isinstance(default_val, float):
+                    val = float(val_str)
+                else:
+                    val = val_str
+                updates[key] = val
+            except ValueError:
+                print(f"Error: Could not convert '{val_str}' to the type of '{key}'.")
+                sys.exit(1)
+        database.update_settings(updates)
+        print("Settings updated successfully.")
+        if os.path.exists(os.path.join(os.getcwd(), ".agents", "AGENTS.md")):
+            print("Updating workspace agent rules...")
+            init_project()
+    stats = database.get_stats()
+    settings = database.get_settings()
+    print("=========================================")
+    print("      ULTIMATE COMPRESSION DASHBOARD")
+    print("=========================================")
+    totals = stats["totals"]
+    print("Totals:")
+    print(f"  Original Tokens:  {totals['original_tokens']:,}")
+    print(f"  Compressed:       {totals['compressed_tokens']:,}")
+    print(f"  Saved Tokens:     {totals['tokens_saved']:,} ({totals['compression_rate']}% rate)")
+    print(f"  Cost Saved:       ${totals['cost_saved_usd']:.4f} USD")
+    print()
+    print("Savings by Tool:")
+    for tool, data in stats["by_tool"].items():
+        print(f"  {tool:<10}:      {data['saved']:,} tokens (${data['cost_saved']:.4f})")
+    print()
+    print("=========================================")
+    print("               SETTINGS")
+    print("=========================================")
+    for key, val in settings.items():
+        print(f"  {key:<30} {val}")
+    print("=========================================")
+    print("To change a setting, run:")
+    print("  uc config --set <KEY>=<VALUE>")
+
 def main():
     parser = argparse.ArgumentParser(description="Ultimate Compression (uc) CLI tool.")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -342,6 +402,9 @@ def main():
     subparsers.add_parser("stop", help="Stops the uc local server & docker dependencies")
     subparsers.add_parser("env", help="Prints session setup environment variables")
     subparsers.add_parser("init", help="Bootstraps the current directory with agent optimization rules")
+    
+    config_parser = subparsers.add_parser("config", help="View dashboard stats and get/set configuration")
+    config_parser.add_argument("--set", action="append", help="Set configuration value (e.g. --set cavemanEnabled=true)")
     
     filter_parser = subparsers.add_parser("rtk-filter", help="Filters stdin content and returns compressed text")
     filter_parser.add_argument("action", help="The command action identifier (e.g. git-diff, grep)")
@@ -356,6 +419,8 @@ def main():
         print_env()
     elif args.command == "init":
         init_project()
+    elif args.command == "config":
+        handle_config(args.set)
     elif args.command == "rtk-filter":
         handle_rtk_filter(args.action)
     else:

@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 SHIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UC_DIR="$(dirname "$SHIM_DIR")"
-REAL_TREE=$(PATH=$(echo "$PATH" | sed -E "s|$SHIM_DIR:?||g") which tree)
+REAL_TREE=""
+IFS=:
+for d in $PATH; do
+  if [ -d "$d" ] && [ "$(cd "$d" && pwd)" != "$SHIM_DIR" ] && [ -x "$d/tree" ] && [ ! -d "$d/tree" ]; then
+    REAL_TREE="$d/tree"
+    break
+  fi
+done
+unset IFS
+
 if [ -x "$REAL_TREE" ]; then
   "$REAL_TREE" "$@" | python3 "$UC_DIR/uc" rtk-filter "tree"
 else

@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 SHIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UC_DIR="$(dirname "$SHIM_DIR")"
-REAL_FIND=$(PATH=$(echo "$PATH" | sed -E "s|$SHIM_DIR:?||g") which find)
+REAL_FIND=""
+IFS=:
+for d in $PATH; do
+  if [ -d "$d" ] && [ "$(cd "$d" && pwd)" != "$SHIM_DIR" ] && [ -x "$d/find" ] && [ ! -d "$d/find" ]; then
+    REAL_FIND="$d/find"
+    break
+  fi
+done
+unset IFS
+
+if [ -z "$REAL_FIND" ]; then
+  echo "find: command not found" >&2
+  exit 127
+fi
+
 "$REAL_FIND" "$@" | python3 "$UC_DIR/uc" rtk-filter "find"

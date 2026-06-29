@@ -4,7 +4,19 @@
 set -e
 
 # Temporarily clean PATH from any active ultimate-compression shims during installation to prevent loops
-export PATH=$(echo "$PATH" | sed -E 's|:[^:]*ultimate-compression/shims||g; s|/[^:]*ultimate-compression/shims:?||g')
+CLEAN_PATH=""
+IFS=:
+for d in $PATH; do
+  if [ -d "$d" ]; then
+    abs_d=$(cd "$d" && pwd)
+    case "$abs_d" in
+      */ultimate-compression/shims) ;;
+      *) CLEAN_PATH="${CLEAN_PATH:+$CLEAN_PATH:}$d" ;;
+    esac
+  fi
+done
+unset IFS
+export PATH="$CLEAN_PATH"
 
 
 # 1. Determine Installation Directory
