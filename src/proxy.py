@@ -178,19 +178,12 @@ async def handle_proxy(path: str, request: fastapi.Request):
     upstream_url = None
     is_claude = "api.anthropic.com" in path or "x-api-key" in headers or "v1/messages" in path
     
-    settings = database.get_settings()
-    
-    # If Headroom is enabled, route the entire request through the local Headroom proxy container (port 8787)
-    if settings.get("headroomEnabled"):
-        upstream_url = f"http://127.0.0.1:8787/{path}"
+    if is_claude:
+        upstream_url = f"{UPSTREAM_ANTHROPIC}/{path}"
+    elif "generativelanguage.googleapis.com" in path or "x-goog-api-key" in headers or "v1beta" in path:
+        upstream_url = f"{UPSTREAM_GEMINI}/{path}"
     else:
-        # Fallback to direct API endpoints (configurable via environment variables)
-        if is_claude:
-            upstream_url = f"{UPSTREAM_ANTHROPIC}/{path}"
-        elif "generativelanguage.googleapis.com" in path or "x-goog-api-key" in headers or "v1beta" in path:
-            upstream_url = f"{UPSTREAM_GEMINI}/{path}"
-        else:
-            upstream_url = f"{UPSTREAM_OPENAI}/{path}"
+        upstream_url = f"{UPSTREAM_OPENAI}/{path}"
 
     # 3. Process compression if it's a Chat/Messages completions request
     model = body.get("model", "default-model")
@@ -200,9 +193,8 @@ async def handle_proxy(path: str, request: fastapi.Request):
         # A. Apply RTK
         body = process_rtk_compression(body)
         
-        # B. Apply Headroom (Only if not routing directly through Headroom proxy container)
-        if not settings.get("headroomEnabled"):
-            body = process_headroom_compression(body, model, is_claude)
+        # B. Apply Headroom
+        body = process_headroom_compression(body, model, is_claude)
         
         # C. Apply Prompts (Caveman & Ponytail)
         body = inject_behavior_prompts(body)
