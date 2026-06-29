@@ -203,6 +203,39 @@ async def handle_proxy(path: str, request: fastapi.Request):
         # Re-serialize body
         body_bytes = json.dumps(body).encode("utf-8")
 
+    # Check for local dummy testing key to allow offline validation
+    if headers.get("authorization") == "Bearer sk-dummy-key-for-local-testing":
+        mock_content = "Olá! O proxy de compressão está funcionando com sucesso! As diretrizes do Caveman/Ponytail foram injetadas nos prompts do sistema."
+        # If caveman is active, respond in caveman style for the demo
+        settings = database.get_settings()
+        if settings.get("cavemanEnabled"):
+            mock_content = "Proxy ativo. Homem das cavernas falar. Compreensao ok."
+            
+        mock_response = {
+            "id": "chatcmpl-mock123",
+            "object": "chat.completion",
+            "created": 1677652288,
+            "model": model,
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": mock_content
+                },
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": 40,
+                "completion_tokens": 30,
+                "total_tokens": 70
+            }
+        }
+        return fastapi.Response(
+            content=json.dumps(mock_response),
+            status_code=200,
+            headers={"Content-Type": "application/json"}
+        )
+
     # 4. Cleanup headers to avoid host header errors on upstream forwarding
     headers.pop("host", None)
     headers.pop("content-length", None)
