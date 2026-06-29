@@ -130,6 +130,12 @@ def get_stats():
     except Exception as e:
         print(f"[Crawler] Error crawling transcripts: {e}")
         
+    # Sync Headroom container metrics
+    try:
+        sync_headroom_stats()
+    except Exception as e:
+        print(f"[Crawler] Error syncing Headroom stats: {e}")
+        
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -323,4 +329,52 @@ def crawl_session_transcripts():
         
     conn.commit()
     conn.close()
+
+def sync_headroom_stats():
+    """
+    Queries the local Headroom container on port 8787 and imports its
+    lifetime token savings into the SQLite database.
+    """
+    import requests
+    try:
+        res = requests.get("http://127.0.0.1:8787/stats", timeout=0.3)
+        if res.status_code != 200:
+            return
+        data = res.json()
+        
+        # Extract savings
+        lifetime = data.get("persistent_savings", {}).get("lifetime", {})
+        tokens_saved = lifetime.get("tokens_saved", 0)
+        cost_saved = lifetime.get("compression_savings_usd", 0.0)
+        total_input = lifetime.get("total_input_tokens", 0)
+        
+        if tokens_saved <= 0:
+            return
+            
+        # Get currently logged headroom savings in database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(tokens_saved) as total FROM compression_logs WHERE tool = 'headroom'")
+        logged_row = cursor.fetchone()
+        logged_saved = logged_row["total"] if logged_row and logged_row["total"] else 0
+        
+        delta_saved = tokens_saved - logged_saved
+        if delta_saved > 0:
+            # Estimate cost delta
+            delta_cost = cost_saved * (delta_saved / tokens_saved) if tokens_saved > 0 else 0.0
+            
+            # Log delta to SQLite
+            log_timestamp = datetime.utcnow().isoformat() + "Z"
+            cursor.execute("""
+                INSERT INTO compression_logs 
+                (timestamp, tool, action, original_tokens, compressed_tokens, tokens_saved, cost_saved_usd)
+                VALUES (?, 'headroom', 'docker-sync', ?, ?, ?, ?)
+            """, (log_timestamp, total_input, total_input - delta_saved, delta_saved, delta_cost))
+            
+            conn.commit()
+        conn.close()
+    except Exception:
+        # Silently fail if headroom is down
+        pass
+
 
