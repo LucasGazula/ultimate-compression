@@ -58,10 +58,10 @@ Set-Content -Path "$InstallDir\uc.cmd" -Value $WrapperContent
 Write-Host "--------------------------------------------------------" -ForegroundColor Green
 Write-Host "✅ Ultimate Compression successfully installed!" -ForegroundColor Green
 Write-Host "--------------------------------------------------------" -ForegroundColor Green
-Write-Host "Please restart your PowerShell terminal to apply PATH changes."
-Write-Host "To start the local server, run:"
-Write-Host "  uc start"
+Write-Host "1. Please restart your PowerShell terminal to apply PATH changes."
 Write-Host ""
-Write-Host "To configure your session for token compression, run:"
-Write-Host "  uc env | iex"
+Write-Host "2. Start the local server:"
+Write-Host "   uc start"
+Write-Host ""
+Write-Host "3. Run 'uc init' inside your project repository to configure it!"
 Write-Host "--------------------------------------------------------" -ForegroundColor Green
