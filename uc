@@ -334,7 +334,162 @@ $env:API_BASE = "http://localhost:20129/v1"
         else:
             print("Please reload your shell ('exec bash' or restart terminal) to apply proxy environment changes.")
 
-def handle_config(sets=None):
+OPTION_VALUES = {
+    "cavemanLevel": ["lite", "full", "ultra"],
+    "ponytailLevel": ["lite", "full", "ultra"],
+    "dynamicMode": ["dynamic", "mcp", "proxy"]
+}
+
+settings_keys = [
+    ("rtkEnabled", "RTK Enabled", "bool"),
+    ("headroomEnabled", "Headroom Enabled", "bool"),
+    ("headroomUrl", "Headroom URL", "str"),
+    ("headroomCompressUserMessages", "Headroom Compress User Msgs", "bool"),
+    ("cavemanEnabled", "Caveman Enabled", "bool"),
+    ("cavemanLevel", "Caveman Level", "option"),
+    ("ponytailEnabled", "Ponytail Enabled", "bool"),
+    ("ponytailLevel", "Ponytail Level", "option"),
+    ("dynamicMode", "Dynamic Mode", "option"),
+    ("tokenCostPerMillionInput", "Input Token Cost ($/M)", "float"),
+    ("tokenCostPerMillionOutput", "Output Token Cost ($/M)", "float"),
+]
+
+def run_interactive_tui(stdscr):
+    import curses
+    curses.curs_set(0)
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_CYAN) # Highlight
+    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK) # Enabled/True
+    curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK) # Disabled/False
+    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK) # Header
+    
+    settings = database.get_settings()
+    working_settings = settings.copy()
+    current_row = 0
+    modified = False
+    
+    while True:
+        stdscr.clear()
+        height, width = stdscr.getmaxyx()
+        
+        if height < 18 or width < 70:
+            stdscr.addstr(0, 0, "Terminal window too small.")
+            stdscr.addstr(1, 0, f"Current: {width}x{height}. Need: at least 70x18.")
+            stdscr.addstr(3, 0, "Press any key to exit.")
+            stdscr.refresh()
+            stdscr.getch()
+            return False
+            
+        title = "ULTIMATE COMPRESSION CONFIGURATION"
+        stdscr.addstr(0, max(0, (width - len(title)) // 2), title, curses.color_pair(4) | curses.A_BOLD)
+        
+        instr1 = "Use UP/DOWN to navigate | LEFT/RIGHT to toggle/cycle | ENTER to edit value"
+        instr2 = "Press [S] to Save & Exit | [Q] or [Esc] to Quit"
+        stdscr.addstr(1, max(0, (width - len(instr1)) // 2), instr1, curses.A_DIM)
+        stdscr.addstr(2, max(0, (width - len(instr2)) // 2), instr2, curses.A_DIM)
+        
+        start_y = 4
+        for idx, (key, label, val_type) in enumerate(settings_keys):
+            y = start_y + idx
+            val = working_settings.get(key)
+            label_str = f"  {label:<30}: "
+            stdscr.addstr(y, 2, label_str)
+            
+            val_x = 2 + len(label_str)
+            
+            if val_type == "bool":
+                val_str = "ON" if val else "OFF"
+                color = curses.color_pair(2) if val else curses.color_pair(3)
+                if idx == current_row:
+                    stdscr.addstr(y, val_x, f"[{val_str}]", curses.color_pair(1) | curses.A_BOLD)
+                else:
+                    stdscr.addstr(y, val_x, f"[{val_str}]", color | curses.A_BOLD)
+            elif val_type == "option":
+                opt_str = f"< {val} >"
+                if idx == current_row:
+                    stdscr.addstr(y, val_x, opt_str, curses.color_pair(1) | curses.A_BOLD)
+                else:
+                    stdscr.addstr(y, val_x, opt_str, curses.A_NORMAL)
+            else:
+                val_str = str(val)
+                if idx == current_row:
+                    stdscr.addstr(y, val_x, val_str, curses.color_pair(1) | curses.A_BOLD)
+                else:
+                    stdscr.addstr(y, val_x, val_str, curses.A_NORMAL)
+                    
+        status_y = start_y + len(settings_keys) + 1
+        if status_y < height - 1:
+            if modified:
+                stdscr.addstr(status_y, 2, "* Settings modified (Press S to Save)", curses.color_pair(4) | curses.A_BOLD)
+            else:
+                stdscr.addstr(status_y, 2, "Settings match saved state", curses.A_DIM)
+                
+        stdscr.refresh()
+        key = stdscr.getch()
+        
+        if key in (curses.KEY_UP, ord('k')):
+            current_row = (current_row - 1) % len(settings_keys)
+        elif key in (curses.KEY_DOWN, ord('j')):
+            current_row = (current_row + 1) % len(settings_keys)
+        elif key in (curses.KEY_LEFT, curses.KEY_RIGHT, ord('h'), ord('l'), ord(' ')):
+            s_key, s_label, val_type = settings_keys[current_row]
+            val = working_settings.get(s_key)
+            if val_type == "bool":
+                working_settings[s_key] = not val
+                modified = True
+            elif val_type == "option":
+                opts = OPTION_VALUES[s_key]
+                cur_idx = opts.index(val) if val in opts else 0
+                step = -1 if key in (curses.KEY_LEFT, ord('h')) else 1
+                working_settings[s_key] = opts[(cur_idx + step) % len(opts)]
+                modified = True
+        elif key in (10, 13, curses.KEY_ENTER):
+            s_key, s_label, val_type = settings_keys[current_row]
+            if val_type in ("str", "float", "int"):
+                curses.curs_set(1)
+                stdscr.move(height - 1, 0)
+                stdscr.clrtoeol()
+                stdscr.addstr(height - 1, 2, f"Enter new {s_label}: ")
+                stdscr.refresh()
+                curses.echo()
+                input_bytes = stdscr.getstr(height - 1, len(s_label) + 15, 60)
+                curses.noecho()
+                curses.curs_set(0)
+                
+                input_str = input_bytes.decode('utf-8').strip()
+                if input_str:
+                    try:
+                        if val_type == "int":
+                            working_settings[s_key] = int(input_str)
+                        elif val_type == "float":
+                            working_settings[s_key] = float(input_str)
+                        else:
+                            working_settings[s_key] = input_str
+                        modified = True
+                    except ValueError:
+                        pass
+        elif key in (ord('s'), ord('S')):
+            if modified:
+                database.update_settings(working_settings)
+                if os.path.exists(os.path.join(os.getcwd(), ".agents", "AGENTS.md")):
+                    init_project()
+                return True
+            return False
+        elif key in (ord('q'), ord('Q'), 27):
+            return False
+
+def run_interactive_config():
+    import curses
+    try:
+        saved = curses.wrapper(run_interactive_tui)
+        if saved:
+            print("Settings updated successfully.")
+        else:
+            print("Configuration closed without changes.")
+    except Exception as e:
+        print(f"Error running interactive config: {e}")
+
+def handle_config(sets=None, interactive=False):
     database.init_db()
     if sets:
         from src.database import DEFAULT_SETTINGS
@@ -369,6 +524,9 @@ def handle_config(sets=None):
         if os.path.exists(os.path.join(os.getcwd(), ".agents", "AGENTS.md")):
             print("Updating workspace agent rules...")
             init_project()
+    elif interactive or sys.stdout.isatty():
+        run_interactive_config()
+        
     stats = database.get_stats()
     settings = database.get_settings()
     print("=========================================")
@@ -405,6 +563,7 @@ def main():
     
     config_parser = subparsers.add_parser("config", help="View dashboard stats and get/set configuration")
     config_parser.add_argument("--set", action="append", help="Set configuration value (e.g. --set cavemanEnabled=true)")
+    config_parser.add_argument("-i", "--interactive", action="store_true", help="Launch interactive TUI config")
     
     filter_parser = subparsers.add_parser("rtk-filter", help="Filters stdin content and returns compressed text")
     filter_parser.add_argument("action", help="The command action identifier (e.g. git-diff, grep)")
@@ -420,7 +579,7 @@ def main():
     elif args.command == "init":
         init_project()
     elif args.command == "config":
-        handle_config(args.set)
+        handle_config(args.set, args.interactive)
     elif args.command == "rtk-filter":
         handle_rtk_filter(args.action)
     else:
