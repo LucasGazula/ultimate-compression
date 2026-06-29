@@ -51,7 +51,7 @@ if ($UserPath -notlike "*$InstallDir*") {
 # 5. Create wrapper batch file in the installation directory to run Python CLI
 $WrapperContent = @"
 @echo off
-python "%InstallDir%\uc" %*
+python "$InstallDir\uc" %*
 "@
 Set-Content -Path "$InstallDir\uc.cmd" -Value $WrapperContent
 
@@ -60,8 +60,11 @@ Write-Host "✅ Ultimate Compression successfully installed!" -ForegroundColor G
 Write-Host "--------------------------------------------------------" -ForegroundColor Green
 Write-Host "1. Please restart your PowerShell terminal to apply PATH changes."
 Write-Host ""
-Write-Host "2. Start the local server:"
-Write-Host "   uc start"
-Write-Host ""
-Write-Host "3. Run 'uc init' inside your project repository to configure it!"
+Write-Host "2. Available CLI commands:"
+Write-Host "   uc start     - Start local server & docker dependencies"
+Write-Host "   uc stop      - Stop local server & docker dependencies"
+Write-Host "   uc status    - View server status, compression stats & recent logs"
+Write-Host "   uc config    - Open interactive configuration TUI"
+Write-Host "   uc init      - Configure agent optimization rules in current directory"
+Write-Host "   uc env       - Print proxy configuration environment variables"
 Write-Host "--------------------------------------------------------" -ForegroundColor Green
