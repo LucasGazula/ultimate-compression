@@ -9,9 +9,10 @@ from .rtk import compress_text
 
 router = fastapi.APIRouter()
 
-UPSTREAM_OPENAI = "https://api.openai.com"
-UPSTREAM_ANTHROPIC = "https://api.anthropic.com"
-UPSTREAM_GEMINI = "https://generativelanguage.googleapis.com"
+import os
+UPSTREAM_OPENAI = os.getenv("UC_UPSTREAM_OPENAI", "https://api.openai.com")
+UPSTREAM_ANTHROPIC = os.getenv("UC_UPSTREAM_ANTHROPIC", "https://api.anthropic.com")
+UPSTREAM_GEMINI = os.getenv("UC_UPSTREAM_GEMINI", "https://generativelanguage.googleapis.com")
 
 def estimate_tokens(text):
     """Simple offline token estimator (3 chars = 1 token for code/diffs/logs)."""
