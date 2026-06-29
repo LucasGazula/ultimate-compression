@@ -552,6 +552,56 @@ def handle_config(sets=None, interactive=False):
     print("To change a setting, run:")
     print("  uc config --set <KEY>=<VALUE>")
 
+def handle_status():
+    database.init_db()
+    running, pid = False, None
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+            os.kill(pid, 0)
+            running = True
+        except (ProcessLookupError, ValueError, OSError):
+            pass
+            
+    print("=========================================")
+    print("             SYSTEM STATUS")
+    print("=========================================")
+    if running:
+        print(f"  Backend Server:  RUNNING (PID: {pid})")
+        print(f"  Dashboard URL:   http://localhost:20129/dashboard/")
+    else:
+        print("  Backend Server:  STOPPED")
+    print()
+    
+    stats = database.get_stats()
+    totals = stats["totals"]
+    print("=========================================")
+    print("      ULTIMATE COMPRESSION DASHBOARD")
+    print("=========================================")
+    print("Totals:")
+    print(f"  Original Tokens:  {totals['original_tokens']:,}")
+    print(f"  Compressed:       {totals['compressed_tokens']:,}")
+    print(f"  Saved Tokens:     {totals['tokens_saved']:,} ({totals['compression_rate']}% rate)")
+    print(f"  Cost Saved:       ${totals['cost_saved_usd']:.4f} USD")
+    print()
+    print("Savings by Tool:")
+    for tool, data in stats["by_tool"].items():
+        print(f"  {tool:<10}:      {data['saved']:,} tokens (${data['cost_saved']:.4f})")
+    print()
+    
+    print("=========================================")
+    print("             RECENT ACTIVITY")
+    print("=========================================")
+    recent = stats.get("recent", [])
+    if recent:
+        for log in recent[:5]:
+            ts = log["timestamp"].split(".")[0]
+            print(f"  {ts} | {log['tool']:<8} | {log['action'][:20]:<20} | Saved {log['tokens_saved']:,} tokens (${log['cost_saved_usd']:.4f})")
+    else:
+        print("  No activity logged yet.")
+    print("=========================================")
+
 def main():
     parser = argparse.ArgumentParser(description="Ultimate Compression (uc) CLI tool.")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -560,6 +610,7 @@ def main():
     subparsers.add_parser("stop", help="Stops the uc local server & docker dependencies")
     subparsers.add_parser("env", help="Prints session setup environment variables")
     subparsers.add_parser("init", help="Bootstraps the current directory with agent optimization rules")
+    subparsers.add_parser("status", help="Displays current system status, compression stats and recent activity")
     
     config_parser = subparsers.add_parser("config", help="View dashboard stats and get/set configuration")
     config_parser.add_argument("--set", action="append", help="Set configuration value (e.g. --set cavemanEnabled=true)")
@@ -580,6 +631,8 @@ def main():
         init_project()
     elif args.command == "config":
         handle_config(args.set, args.interactive)
+    elif args.command == "status":
+        handle_status()
     elif args.command == "rtk-filter":
         handle_rtk_filter(args.action)
     else:
