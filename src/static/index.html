@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Compression (uc) Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <h2>uc.</h2>
+                </div>
+                <p class="subtitle">Ultimate Compression</p>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="status">
+                    <span class="icon">📊</span> Status Geral
+                </button>
+                <button class="nav-item" id="nav-config" data-tab="config">
+                    <span class="icon">⚙️</span> Configurações
+                </button>
+                <button class="nav-item" id="nav-metrics" data-tab="metrics">
+                    <span class="icon">📈</span> Métricas & Economia
+                </button>
+                <button class="nav-item" data-tab="tutorials">
+                    <span class="icon">📖</span> Tutoriais & Créditos
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <p>Status: <span id="server-status" class="status-badge running">Ativo</span></p>
+                <p class="version">v1.0.0 (SSD local)</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="content-header">
+                <h1 id="tab-title">Status Geral</h1>
+                <p id="tab-subtitle" class="header-desc">Visão em tempo real das ferramentas de compressão ativa.</p>
+            </header>
+
+            <!-- Tab 1: Status Geral -->
+            <section class="tab-content active" id="tab-status">
+                <div class="grid-2">
+                    <div class="card glass status-summary">
+                        <h3>Status das Ferramentas</h3>
+                        <div class="status-list">
+                            <div class="status-row">
+                                <span class="tool-name">🛠️ RTK (Request Token Killer)</span>
+                                <span class="status-value badge" id="status-rtk">Desativado</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="tool-name">🧠 Headroom (Context Compression)</span>
+                                <span class="status-value badge" id="status-headroom">Desativado</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="tool-name">🪨 Caveman Mode (Brief Output)</span>
+                                <span class="status-value badge" id="status-caveman">Desativado</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="tool-name">💈 Ponytail (Lazy Senior Dev)</span>
+                                <span class="status-value badge" id="status-ponytail">Desativado</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card glass stats-overview">
+                        <h3>Visão de Economia</h3>
+                        <div class="overview-grid">
+                            <div class="overview-item">
+                                <span class="value" id="kpi-total-saved">0</span>
+                                <span class="label">Tokens Salvos</span>
+                            </div>
+                            <div class="overview-item">
+                                <span class="value" id="kpi-compression-rate">0%</span>
+                                <span class="label">Média de Redução</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass margin-top">
+                    <h3>Atalhos Úteis</h3>
+                    <p>Execute estes comandos no terminal para inicializar ou conferir seu ambiente local:</p>
+                    <div class="code-box">
+                        <code id="cli-env-cmd">eval $(uc env)</code>
+                        <button class="copy-btn" onclick="copyText('cli-env-cmd')">Copiar</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 2: Configurações -->
+            <section class="tab-content" id="tab-config">
+                <div class="card glass">
+                    <h3>Modo de Operação</h3>
+                    <p class="card-desc">Defina como a ferramenta se conecta aos seus assistentes.</p>
+                    <div class="selector-group">
+                        <label class="selector-item">
+                            <input type="radio" name="dynamicMode" value="dynamic" checked>
+                            <div class="selector-card">
+                                <h4>Dynamic (Recomendado)</h4>
+                                <p>MCP automático para assinaturas e Proxy local para chaves de API.</p>
+                            </div>
+                        </label>
+                        <label class="selector-item">
+                            <input type="radio" name="dynamicMode" value="mcp">
+                            <div class="selector-card">
+                                <h4>MCP Server</h4>
+                                <p>Força conexões seguras sem proxy, rodando via stdio local.</p>
+                            </div>
+                        </label>
+                        <label class="selector-item">
+                            <input type="radio" name="dynamicMode" value="proxy">
+                            <div class="selector-card">
+                                <h4>Proxy API</h4>
+                                <p>Redireciona endpoints e comprime todo o tráfego HTTP local.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card glass margin-top">
+                    <h3>Controle de Ferramentas</h3>
+                    <div class="config-grid">
+                        <!-- RTK -->
+                        <div class="config-row">
+                            <div class="config-info">
+                                <h4>🛠️ RTK (Request Token Killer)</h4>
+                                <p>Comprime saídas do terminal local (diff, status, grep, ls, find) para economizar tokens de entrada.</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="check-rtk">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Headroom -->
+                        <div class="config-row">
+                            <div class="config-info">
+                                <h4>🧠 Headroom (Context Compression)</h4>
+                                <p>Comprime o histórico de mensagens usando Docker local.</p>
+                                <div class="nested-config" id="headroom-settings">
+                                    <input type="text" id="input-headroom-url" placeholder="http://localhost:8787" class="text-input">
+                                </div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="check-headroom">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Caveman -->
+                        <div class="config-row">
+                            <div class="config-info">
+                                <h4>🪨 Caveman Mode</h4>
+                                <p>Prompt de sistema para respostas concisas e eliminação de explicações redundantes.</p>
+                                <div class="level-selector-container" id="caveman-levels">
+                                    <span class="level-label">Nível de Intensidade:</span>
+                                    <div class="level-buttons">
+                                        <button class="level-btn" data-level="lite">Lite</button>
+                                        <button class="level-btn active" data-level="full">Full</button>
+                                        <button class="level-btn" data-level="ultra">Ultra</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="check-caveman">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Ponytail -->
+                        <div class="config-row">
+                            <div class="config-info">
+                                <h4>💈 Ponytail (Lazy Senior Dev)</h4>
+                                <p>Instruções para a IA agir como sênior focado em simplicidade extrema, stdlib e YAGNI.</p>
+                                <div class="level-selector-container" id="ponytail-levels">
+                                    <span class="level-label">Nível de Intensidade:</span>
+                                    <div class="level-buttons">
+                                        <button class="level-btn" data-level="lite">Lite</button>
+                                        <button class="level-btn active" data-level="full">Full</button>
+                                        <button class="level-btn" data-level="ultra">Ultra</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="check-ponytail">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass margin-top text-right">
+                    <button class="btn btn-primary" id="btn-save-settings">Salvar Configurações</button>
+                </div>
+            </section>
+
+            <!-- Tab 3: Métricas & Economia -->
+            <section class="tab-content" id="tab-metrics">
+                <div class="grid-3">
+                    <div class="card glass kpi-card">
+                        <span class="kpi-icon">💰</span>
+                        <div class="kpi-data">
+                            <h3 id="metric-dollars">R$ 0,00</h3>
+                            <p>Economia Estimada</p>
+                        </div>
+                    </div>
+                    <div class="card glass kpi-card">
+                        <span class="kpi-icon">📉</span>
+                        <div class="kpi-data">
+                            <h3 id="metric-rate">0%</h3>
+                            <p>Média de Redução</p>
+                        </div>
+                    </div>
+                    <div class="card glass kpi-card">
+                        <span class="kpi-icon">📦</span>
+                        <div class="kpi-data">
+                            <h3 id="metric-saved-tokens">0</h3>
+                            <p>Tokens Salvos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2 margin-top">
+                    <!-- Contribution Chart -->
+                    <div class="card glass">
+                        <h3>Economia por Ferramenta</h3>
+                        <p class="card-desc">Fração de tokens reduzida por cada utilitário ativo.</p>
+                        <div class="chart-container">
+                            <div class="bar-chart-row">
+                                <span class="bar-label">RTK</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" id="bar-rtk" style="width: 0%"></div>
+                                </div>
+                                <span class="bar-val" id="val-rtk">0 B</span>
+                            </div>
+                            <div class="bar-chart-row">
+                                <span class="bar-label">Headroom</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" id="bar-headroom" style="width: 0%"></div>
+                                </div>
+                                <span class="bar-val" id="val-headroom">0 B</span>
+                            </div>
+                            <div class="bar-chart-row">
+                                <span class="bar-label">Caveman</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" id="bar-caveman" style="width: 0%"></div>
+                                </div>
+                                <span class="bar-val" id="val-caveman">0 B</span>
+                            </div>
+                            <div class="bar-chart-row">
+                                <span class="bar-label">Ponytail</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" id="bar-ponytail" style="width: 0%"></div>
+                                </div>
+                                <span class="bar-val" id="val-ponytail">0 B</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily saving trend -->
+                    <div class="card glass">
+                        <h3>Histórico Diário (Últimos Dias)</h3>
+                        <p class="card-desc">Tendência recente de tokens reduzidos na sua máquina.</p>
+                        <div id="trend-list" class="trend-list">
+                            <p class="no-data">Nenhuma atividade recente.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass margin-top">
+                    <div class="flex-row">
+                        <h3>Atividades de Compressão Recentes</h3>
+                        <button class="btn btn-secondary btn-sm" id="btn-clear-logs">Limpar Histórico</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Horário</th>
+                                    <th>Ferramenta</th>
+                                    <th>Ação / Comando</th>
+                                    <th>Original</th>
+                                    <th>Comprimido</th>
+                                    <th>Economia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-tbody">
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhum evento registrado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 4: Tutoriais & Créditos -->
+            <section class="tab-content" id="tab-tutorials">
+                <div class="card glass">
+                    <h3>Como Configurar</h3>
+                    <p class="card-desc">Guia passo a passo para conectar o Ultimate Compression com suas ferramentas de IA favoritas.</p>
+                    
+                    <div class="tutorial-accordion">
+                        <div class="tutorial-item">
+                            <h4>🤖 1. No Antigravity CLI / Claude Code</h4>
+                            <div class="tutorial-content">
+                                <p><strong>Modo Seguro (Nativo via MCP):</strong></p>
+                                <p>Abra o arquivo de configuração de MCP global (`~/.gemini/config/mcp.json` ou `~/.clauderc.json`) e insira a seguinte configuração:</p>
+                                <pre>{
+  "mcpServers": {
+    "ultimate-compression": {
+      "command": "python3",
+      "args": ["/mnt/ssd/ultimate-compression/src/mcp_server.py"]
+    }
+  }
+}</pre>
+                            </div>
+                        </div>
+
+                        <div class="tutorial-item">
+                            <h4>💻 2. No VS Code / Cloud Code (Extensão)</h4>
+                            <div class="tutorial-content">
+                                <p><strong>Modo Proxy:</strong></p>
+                                <p>Se o seu assistente de IA usa chaves de API próprias, você pode configurar a variável de ambiente de API base local na sua sessão do terminal antes de abrir a IDE:</p>
+                                <pre>export OPENAI_API_BASE="http://localhost:20129/v1"
+export ANTHROPIC_API_BASE="http://localhost:20129/v1"
+code .</pre>
+                            </div>
+                        </div>
+
+                        <div class="tutorial-item">
+                            <h4>⚡ 3. Ativando o RTK (Shims Globais)</h4>
+                            <div class="tutorial-content">
+                                <p>Para que ferramentas CLI interceptem automaticamente comandos verbose de Git e terminal, inicialize o ambiente na sua sessão atual:</p>
+                                <pre>eval $(uc env)</pre>
+                                <p>Ou adicione definitivamente no seu profile (`~/.bashrc` ou `~/.zshrc`):</p>
+                                <pre>export PATH="/mnt/ssd/ultimate-compression/shims:$PATH"</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass margin-top">
+                    <h3>Créditos aos Criadores Originais</h3>
+                    <p>O <strong>Ultimate Compression</strong> é fruto do excelente trabalho dos seguintes desenvolvedores do ecossistema open-source:</p>
+                    
+                    <div class="credits-grid">
+                        <div class="credit-card">
+                            <h5>🛠️ RTK (Rust Token Killer)</h5>
+                            <p>Autores: <a href="https://github.com/rtk-ai/rtk" target="_blank">rtk-ai/rtk</a></p>
+                            <p class="desc">Originalmente construído em Rust para compactar as saídas de ferramentas que os agentes usam no terminal.</p>
+                        </div>
+                        <div class="credit-card">
+                            <h5>🧠 Headroom</h5>
+                            <p>Autor: <a href="https://github.com/chopratejas/headroom" target="_blank">Tejas Chopra</a></p>
+                            <p class="desc">Criador da filosofia de compressão reversível de contexto e gerenciamento inteligente de payloads.</p>
+                        </div>
+                        <div class="credit-card">
+                            <h5>🪨 Caveman Mode</h5>
+                            <p>Autor: <a href="https://github.com/JuliusBrussee/caveman" target="_blank">Julius Brussee</a></p>
+                            <p class="desc">Promotor do estilo conciso que descarta o excesso de formalismo em respostas de IA.</p>
+                        </div>
+                        <div class="credit-card">
+                            <h5>💈 Ponytail (Lazy Senior Dev)</h5>
+                            <p>Autor: <a href="https://github.com/DietrichGebert/ponytail" target="_blank">Dietrich Gebert</a></p>
+                            <p class="desc">Pioneiro nas regras de prompt que instruem o LLM a construir o menor código possível.</p>
+                        </div>
+                    </div>
+                    
+                    <p class="thank-you text-center margin-top">
+                        Agradecimentos especiais a todos os autores originais por disponibilizarem esses projetos para a comunidade! ❤️
+                    </p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

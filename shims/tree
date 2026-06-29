@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+REAL_TREE=$(PATH=$(echo "$PATH" | sed -E 's|/mnt/ssd/ultimate-compression/shims:?||g') which tree)
+if [ -x "$REAL_TREE" ]; then
+  "$REAL_TREE" "$@" | python3 /mnt/ssd/ultimate-compression/uc rtk-filter "tree"
+else
+  # Fallback if tree is not installed on system
+  echo "tree: command not found" >&2
+  exit 127
+fi

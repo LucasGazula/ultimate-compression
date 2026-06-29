@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+REAL_RG=$(PATH=$(echo "$PATH" | sed -E 's|/mnt/ssd/ultimate-compression/shims:?||g') which rg)
+if [ -x "$REAL_RG" ]; then
+  "$REAL_RG" "$@" | python3 /mnt/ssd/ultimate-compression/uc rtk-filter "rg"
+else
+  # Pass-through failure if not installed
+  exit 127
+fi

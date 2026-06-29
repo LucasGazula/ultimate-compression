@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+uc.pid
+uc.log
+ultimate_compression.db
+scratch/

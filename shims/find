@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+REAL_FIND=$(PATH=$(echo "$PATH" | sed -E 's|/mnt/ssd/ultimate-compression/shims:?||g') which find)
+"$REAL_FIND" "$@" | python3 /mnt/ssd/ultimate-compression/uc rtk-filter "find"

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+REAL_GIT=$(PATH=$(echo "$PATH" | sed -E 's|/mnt/ssd/ultimate-compression/shims:?||g') which git)
+
+if [[ "$1" == "diff" || "$1" == "status" ]]; then
+  "$REAL_GIT" "$@" | python3 /mnt/ssd/ultimate-compression/uc rtk-filter "git-$1"
+else
+  exec "$REAL_GIT" "$@"
+fi
