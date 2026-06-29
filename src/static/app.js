@@ -60,19 +60,40 @@ toggleHeadroom.addEventListener('change', () => {
     headroomSettings.style.display = toggleHeadroom.checked ? 'block' : 'none';
 });
 
+// Level selector descriptions
+const levelDescriptions = {
+    caveman: {
+        lite: "Remove saudações, desculpas e palavras de hesitação (like, basically). Mantém sentenças gramaticais normais.",
+        full: "Fala telegráfica de homem das cavernas. Remove artigos (a/an/the) e conjunções. Mantém total exatidão técnica.",
+        ultra: "MÁXIMA compressão. Usa abreviações (DB, auth, fn) e causalidade direta (X → Y). Responde com o mínimo de palavras."
+    },
+    ponytail: {
+        lite: "Constrói o que foi pedido, mas propõe uma alternativa mais simples de uma única linha na resposta. Você decide.",
+        full: "Aplica a escada sênior pragmática: YAGNI, biblioteca padrão primeiro, menor diff funcional possível.",
+        ultra: "YAGNI extremista. Deleta antes de adicionar. Entrega soluções de uma linha e desafia requisitos extras."
+    }
+};
+
 // Level selector buttons active toggle
-function setupLevelSelectors(containerId) {
+function setupLevelSelectors(containerId, toolPrefix) {
     const container = document.getElementById(containerId);
     const buttons = container.querySelectorAll('.level-btn');
+    const descEl = document.getElementById(`${toolPrefix}-level-desc`);
+    
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
             buttons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            
+            const level = btn.getAttribute('data-level');
+            if (descEl && levelDescriptions[toolPrefix] && levelDescriptions[toolPrefix][level]) {
+                descEl.textContent = levelDescriptions[toolPrefix][level];
+            }
         });
     });
 }
-setupLevelSelectors('caveman-levels');
-setupLevelSelectors('ponytail-levels');
+setupLevelSelectors('caveman-levels', 'caveman');
+setupLevelSelectors('ponytail-levels', 'ponytail');
 
 // Get active level from button group
 function getActiveLevel(containerId) {
@@ -81,8 +102,8 @@ function getActiveLevel(containerId) {
     return activeBtn ? activeBtn.getAttribute('data-level') : 'full';
 }
 
-// Set active level in button group
-function setActiveLevel(containerId, level) {
+// Set active level in button group and update description
+function setActiveLevel(containerId, toolPrefix, level) {
     const container = document.getElementById(containerId);
     const buttons = container.querySelectorAll('.level-btn');
     buttons.forEach(btn => {
@@ -92,6 +113,12 @@ function setActiveLevel(containerId, level) {
             btn.classList.remove('active');
         }
     });
+    
+    // Update description text
+    const descEl = document.getElementById(`${toolPrefix}-level-desc`);
+    if (descEl && levelDescriptions[toolPrefix] && levelDescriptions[toolPrefix][level]) {
+        descEl.textContent = levelDescriptions[toolPrefix][level];
+    }
 }
 
 // 3. Load settings from Backend
@@ -120,8 +147,8 @@ async function loadSettings() {
         headroomSettings.style.display = data.headroomEnabled ? 'block' : 'none';
         
         // Levels
-        setActiveLevel('caveman-levels', data.cavemanLevel || 'full');
-        setActiveLevel('ponytail-levels', data.ponytailLevel || 'full');
+        setActiveLevel('caveman-levels', 'caveman', data.cavemanLevel || 'full');
+        setActiveLevel('ponytail-levels', 'ponytail', data.ponytailLevel || 'full');
         
         updateStatusTabBadges(data);
     } catch (e) {
