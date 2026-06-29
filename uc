@@ -2,6 +2,12 @@
 import sys
 import os
 
+# Configure stdout and stderr to use UTF-8
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 # Self-relaunch in virtualenv if available
 venv_dir = os.path.dirname(os.path.abspath(__file__))
 venv_python = os.path.join(venv_dir, ".venv", "bin", "python")
