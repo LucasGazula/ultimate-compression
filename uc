@@ -231,7 +231,7 @@ def init_project():
     mcp_path = os.path.join(get_real_path(), "src", "mcp_server.py")
     rules.append("## ⚡ Model Context Protocol (MCP) Integration")
     rules.append(f"To enable direct Headroom and RTK tools in your agent, add this command to your MCP server list:")
-    rules.append(f"Command: `python3 {mcp_path}`\n")
+    rules.append(f"Command: `{sys.executable} {mcp_path}`\n")
     
     with open(agents_file, "w", encoding="utf-8") as f:
         f.write("\n".join(rules))
@@ -244,7 +244,7 @@ def init_project():
     
     # Register MCP server globally in all common agent configuration folders
     mcp_config = {
-        "command": "python3",
+        "command": sys.executable,
         "args": [os.path.join(get_real_path(), "src", "mcp_server.py")]
     }
     
