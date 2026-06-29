@@ -20,11 +20,7 @@ export PATH="$CLEAN_PATH"
 
 
 # 1. Determine Installation Directory
-if [ -d "/mnt/ssd" ]; then
-  INSTALL_DIR="/mnt/ssd/ultimate-compression"
-else
-  INSTALL_DIR="$HOME/.ultimate-compression"
-fi
+INSTALL_DIR="$HOME/.ultimate-compression"
 
 echo "Installing Ultimate Compression to: $INSTALL_DIR"
 
@@ -77,10 +73,10 @@ clean_profile() {
   if [ -f "$profile" ]; then
     if sed --version >/dev/null 2>&1; then
       # GNU sed (Linux)
-      sed -i '/\/mnt\/ssd\/ultimate-compression/d' "$profile"
+      sed -i '/ultimate-compression/d' "$profile"
     else
       # BSD sed (macOS)
-      sed -i '' '/\/mnt\/ssd\/ultimate-compression/d' "$profile"
+      sed -i '' '/ultimate-compression/d' "$profile"
     fi
   fi
 }

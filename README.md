@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/LucasGazula/ultimate-compression/ma
 irm https://raw.githubusercontent.com/LucasGazula/ultimate-compression/main/install.ps1 | iex
 ```
 
-*The installer will auto-detect `/mnt/ssd` on your machine and install all files directly on your SSD, adding the `uc` CLI command to your PATH.*
+*The installer will install all files directly to your home directory (`~/.ultimate-compression`) and add the `uc` CLI command to your PATH.*
 
 ---
 
