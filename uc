@@ -194,6 +194,34 @@ def handle_rtk_filter(action):
         
     sys.stdout.flush()
 
+SKILLS_TO_DEPLOY = [
+    "cavecrew", "caveman-commit", "caveman-compress",
+    "caveman-help", "caveman-review", "caveman-stats",
+    "ponytail-audit", "ponytail-debt", "ponytail-gain",
+    "ponytail-help", "ponytail-review",
+]
+
+def deploy_skills(project_root):
+    """Copies deployable SKILL.md files to .agents/skills/ in the given project root."""
+    src_skills = os.path.join(get_real_path(), "src", "skills")
+    target_skills = os.path.join(project_root, ".agents", "skills")
+    count = 0
+    for skill_name in SKILLS_TO_DEPLOY:
+        src = os.path.join(src_skills, skill_name, "SKILL.md")
+        dst_dir = os.path.join(target_skills, skill_name)
+        dst = os.path.join(dst_dir, "SKILL.md")
+        if not os.path.exists(src):
+            print(f"Warning: skill {skill_name} not found at {src}")
+            continue
+        os.makedirs(dst_dir, exist_ok=True)
+        with open(src, "r", encoding="utf-8") as f:
+            content = f.read()
+        with open(dst, "w", encoding="utf-8") as f:
+            f.write(content)
+        count += 1
+    print(f"Deployed {count} skills to {target_skills}")
+    return count
+
 def init_project():
     """Initializes the active directory with project-scoped rules for Antigravity/Claude Code."""
     database.init_db()
@@ -237,6 +265,47 @@ def init_project():
         f.write("\n".join(rules))
         
     print(f"Successfully configured workspace rules in: {agents_file}")
+
+    # Deploy skills
+    deploy_skills(os.getcwd())
+
+    # Add skills reference section to AGENTS.md
+    skills_section = """
+## 🔧 UC Skills Available
+
+Skills are on-demand commands available via \`/skill-name\` in your agent:
+
+### Caveman Skills
+| Command | Description |
+|---------|-------------|
+| \`/cavecrew\` | Delegated subagents for investigation/surgery/review |
+| \`/caveman-commit\` | Generate terse Conventional Commits message |
+| \`/caveman-compress <file>\` | Compress a prose/memory file |
+| \`/caveman-help\` | Quick reference for all caveman commands |
+| \`/caveman-review\` | Ultra-compact code review |
+| \`/caveman-stats\` | Show session token usage and savings |
+
+### Ponytail Skills
+| Command | Description |
+|---------|-------------|
+| \`/ponytail-review\` | Review current diff for over-engineering |
+| \`/ponytail-audit\` | Audit entire repo for over-engineering |
+| \`/ponytail-debt\` | Harvest \`ponytail:\` comments into ledger |
+| \`/ponytail-gain\` | Show measured-impact scoreboard |
+| \`/ponytail-help\` | Quick reference for all ponytail commands |
+
+### Runtime Compression (always active)
+- **RTK** — \`shims/\` on PATH compress git/grep/ls/find/tree/rg output transparently
+- **Headroom** — Docker proxy on :8787 compresses conversation context transparently
+
+Your agent will discover these skills automatically and can invoke them when relevant.
+"""
+
+    with open(agents_file, "r", encoding="utf-8") as f:
+        existing = f.read()
+    if "## 🔧 UC Skills Available" not in existing:
+        with open(agents_file, "a", encoding="utf-8") as f:
+            f.write(skills_section)
 
     # Auto-configure shell profiles (Bash/Zsh on Linux/Mac, PowerShell on Windows/Linux)
     home = os.path.expanduser("~")
@@ -642,7 +711,8 @@ def main():
     subparsers.add_parser("start", help="Starts the uc local server & docker dependencies")
     subparsers.add_parser("stop", help="Stops the uc local server & docker dependencies")
     subparsers.add_parser("env", help="Prints session setup environment variables")
-    subparsers.add_parser("init", help="Bootstraps the current directory with agent optimization rules")
+    init_parser = subparsers.add_parser("init", help="Bootstraps the current directory with agent optimization rules")
+    init_parser.add_argument("--skills", action="store_true", help="Deploy only skills (skip MCP and shell profiles)")
     subparsers.add_parser("status", help="Displays current system status, compression stats and recent activity")
     
     config_parser = subparsers.add_parser("config", help="View dashboard stats and get/set configuration")
@@ -661,7 +731,12 @@ def main():
     elif args.command == "env":
         print_env()
     elif args.command == "init":
-        init_project()
+        if getattr(args, 'skills', False):
+            database.init_db()
+            deploy_skills(os.getcwd())
+            print("Skills deployed. Run `uc init` (without --skills) for full setup including MCP and shell profiles.")
+        else:
+            init_project()
     elif args.command == "config":
         handle_config(args.set, args.interactive)
     elif args.command == "status":
